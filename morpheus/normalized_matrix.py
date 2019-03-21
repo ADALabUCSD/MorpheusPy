@@ -64,6 +64,7 @@ class NormalizedMatrix(matrix):
         obj.ent_table = ent_table
         obj.att_table = att_table
         obj.kfkds = kfkds
+        ns = ent_table.shape[0]
         obj.trans = trans
         obj.stamp = time.clock() if stamp is None else stamp
         obj.sizes = sizes
@@ -448,24 +449,19 @@ class NormalizedMatrix(matrix):
         ns = k[0].shape[0]
         ds = s.shape[1]
         nr = [t.shape[0] for t in self.att_table]
+        dr = [t.shape[1] for t in self.att_table]
         if not self.trans:
-            if all(map(sp.issparse, self.att_table)):
-                # TODO
-                return NotImplemented
-                # return self._t_cross(self.ent_table) + \
-                #        sum((self._t_cross(self._t_cross(t)[self.kfkds[i][0]], self.kfkds[i][1]))
-                #            for i, t in enumerate(self.att_table))
+            if s.size > 0:
+                res = self._t_cross(s)
             else:
-                if s.size > 0:
-                    res = self._t_cross(s)
-                else:
-                    res = np.zeros((ns, ns), dtype=float, order='C')
-
+                res = np.zeros((ns, ns), dtype=float, order='C')
+            if all(map(sp.issparse, r)):
+                cross_r = [self._t_cross(t).toarray() for t in r]
+            else:
                 cross_r = [self._t_cross(t) for t in r]
-                comp.expand_add(ns, len(k), k, cross_r, nr, res)
+            comp.expand_add(ns, len(k), k, cross_r, nr, res)
 
-                return res
-
+            return res
         else:
             if all(map(sp.issparse, self.att_table)):
                 other = np.ones((1, ns))
@@ -483,37 +479,74 @@ class NormalizedMatrix(matrix):
                     p = self._cross(self.att_table[0], m)
                     s_part = self._cross(self.ent_table)
 
-                    res = sp.vstack((sp.hstack((s_part, p.T)), sp.hstack((p, diag_part))))
+                    res = sp.vstack((np.hstack((s_part, p.T)), sp.hstack((p, diag_part))))
                 else:
                     res = diag_part
+
+                # multi-table join
+                for i in range(1, len(k)):
+                    ps = []
+                    if ds > 0:
+                        m = np.zeros((nr[i], ds))
+                        comp.group_left(ns, ds, s, k[i], m)
+                        ps += [self._cross(self.att_table[i], m)]
+
+                    # cp (KRi)
+                    size = self.att_table[i].size
+                    data = np.empty(size)
+                    comp.multiply_sparse(size, self.att_table[i].row, self.att_table[i].data, np.sqrt(v[i]), data)
+                    diag_part = self._cross(sp.coo_matrix((data, (self.att_table[i].row, self.att_table[i].col))))
+
+                    for j in range(i):
+                        ps += [r[i].tocsr()[k[i]].T.dot(r[j].tocsr()[k[j]])]
+
+                    res = sp.vstack((sp.hstack((res, sp.vstack([p.T for p in ps]))), sp.hstack(ps + [diag_part])))
             else:
-                nt = self.ent_table.shape[1] + self.att_table[0].shape[1]
+                nt = self.ent_table.shape[1] + sum([att.shape[1] for att in self.att_table])
                 other = np.ones((1, ns))
                 v = [np.zeros((1, t.shape[0]), dtype=float) for t in self.att_table]
-                data = np.empty(self.att_table[0].shape, order='C')
-
                 res = np.empty((nt, nt))
+
+                data = np.empty(self.att_table[0].shape, order='C')
                 comp.group(ns, len(k), 1, k, nr, other, v)
                 comp.multiply(self.att_table[0].shape[0], self.att_table[0].shape[1], self.att_table[0], v[0], data)
+                res[ds:ds+dr[0], ds:ds+dr[0]] = self._cross(data)
 
-                res[ds:, ds:] = self._cross(data)
                 if ds > 0:
                     m = np.zeros((nr[0], ds))
                     comp.group_left(ns, ds, s, k[0], m)
-                    res[ds:, :ds] = self._cross(self.att_table[0], m)
-                    res[:ds, ds:] = res[ds:, :ds].T
+                    res[ds:ds+dr[0], :ds] = self._cross(self.att_table[0], m)
+                    res[:ds, ds:ds+dr[0]] = res[ds:ds+dr[0], :ds].T
                     res[:ds, :ds] = self._cross(self.ent_table)
 
-            # TODO: m:n joins
-            # for i in range(1, len(self.kfkds)):
-            #     p = self._cross(self.att_table[i], self._cross(self.kfkds[i][1], self.ent_table))
-            #     for j in range(i - 1):
-            #         p = np.hstack((p, np.cross(self.att_table[i], self._cross(
-            #             self._cross(self.kfkds[i][1], self.kfkds[i][1]), self.att_table[j]))))
-            #     res = np.vstack((np.hstack((res, p.T)),
-            #                      np.hstack((p, self._cross(np.diag(
-            #                          np.power(np.diagflat(self.kfkds[i][1].sum(axis=0)), 0.5) * self.att_table[i]))))))
+                # multi-table join
+                for i in range(1, len(self.kfkds)):
+                    if ds > 0:
+                        m = np.zeros((nr[i], ds))
+                        comp.group_left(ns, ds, s, k[i], m)
+                        ni1 = ds + sum([t.shape[1] for t in self.att_table[:i]])
+                        ni2 = ni1 + self.att_table[i].shape[1]
+                        res[ni1:ni2, :ds] = self._cross(self.att_table[i], m)
+                        res[:ds, ni1:ni2] = res[ni1:ni2, :ds].T
 
+                    # cp(KRi)
+                    data = np.empty(self.att_table[i].shape, order='C')
+                    comp.multiply(self.att_table[i].shape[0], self.att_table[i].shape[1], self.att_table[i], v[i], data)
+                    res[ni1:ni2, ni1:ni2] = self._cross(data)
+
+                    for j in range(i):
+                        dj1 = ds + sum([t.shape[1] for t in self.att_table[:j]])
+                        dj2 = dj1 +self.att_table[j].shape[1]
+
+                        if (ns * 1.0 / nr[j]) > (1 + nr[j] * 1.0 / dr[j]):
+                            m = np.zeros((nr[i], nr[j]), order='C')
+                            comp.group_k_by_k(nr[i], nr[j], ns, k[i], k[j], m)
+
+                            res[ni1:ni2, dj1:dj2] = r[i].T.dot(m.T.dot(r[j]))
+                            res[dj1:dj2, ni1:ni2] = res[ni1:ni2, dj1:dj2].T
+                        else:
+                            res[ni1:ni2, dj1:dj2] = r[i][k[i]].T.dot(r[j][k[j]])
+                            res[dj1:dj2, ni1:ni2] = res[ni1:ni2, dj1:dj2].T
             return res
 
     def _t_cross(self, matrix_a, matrix_b=None):

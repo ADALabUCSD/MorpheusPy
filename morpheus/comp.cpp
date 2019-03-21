@@ -86,6 +86,19 @@ static void group_left(const I ns,
 }
 
 template <class I, class T, class K>
+static void group_k_by_k(const I n,
+                    const I d,
+                    const I ns,
+                    const K* ki,
+                    const K* kj,
+                          T res[])
+{
+    for(int i = 0; i < ns; i++) {
+        res[kj[i] + ki[i] * d] += 1;
+    }
+}
+
+template <class I, class T, class K>
 static void group(const I ns,
                   const I nk,
                   const I nw,
@@ -179,6 +192,26 @@ static PyObject * group_left(PyObject *self, PyObject* args)
     }
 
     group_left<int, double, long>(ns, ds, (double*) PyArray_DATA(s), (long*) PyArray_DATA(k), (double*)PyArray_DATA(res));
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject * group_k_by_k(PyObject *self, PyObject* args)
+{
+    int n;
+    int d;
+    int ns;
+    PyObject* ki;
+    PyObject* kj;
+    PyObject* res;
+
+    if (!PyArg_ParseTuple(args, "iiiOOO", &n, &d, &ns, &ki, &kj, &res)){
+        PyErr_SetString(PyExc_ValueError,"Error while parsing the trajectory coordinates in get_spinangle_traj");
+        return NULL;
+    }
+
+    group_k_by_k<int, double, long>(n, d, ns, (long*) PyArray_DATA(ki), (long*) PyArray_DATA(kj), (double*)PyArray_DATA(res));
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -290,6 +323,8 @@ static PyMethodDef comp_methods[] = {
 	 "expand nr*ns matrix to ns*ns"},
 	{"group_left", group_left, METH_VARARGS,
 	 "group ns*ds matrix to nr*ds"},
+	{"group_k_by_k", group_k_by_k, METH_VARARGS,
+	 "group ki by kj"},
 	{"group", group, METH_VARARGS,
 	 "group in rmm"},
 	{"multiply", multiply, METH_VARARGS,

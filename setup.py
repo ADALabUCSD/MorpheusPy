@@ -10,7 +10,6 @@
 # limitations under the License.
 
 
-# from distutils.core import setup, Extension
 from setuptools import setup, find_packages, Extension
 import numpy
 

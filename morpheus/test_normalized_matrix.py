@@ -10,6 +10,7 @@
 # limitations under the License.
 
 import numpy as np
+import scipy.sparse as sp
 import sklearn.preprocessing as preprocess
 from numpy.testing import (
     run_module_suite, assert_equal, assert_almost_equal
@@ -263,13 +264,13 @@ class TestNormalizedMatrix(object):
         n_matrix = self.n_matrix.T
         x = np.matrix([[1.0], [2.0], [3.0], [4.0], [5.0]])
 
-        assert_equal(n_matrix * x, self.m.T * x)
+        assert_almost_equal(n_matrix * x, self.m.T * x)
 
     def test_rmm(self):
         n_matrix = self.n_matrix
         x = np.matrix([[1.0, 2.0, 3.0, 4.0, 5.0]])
 
-        assert_equal(x * n_matrix, x * self.m)
+        assert_almost_equal(x * n_matrix, x * self.m)
 
     def test_rmm_trans(self):
         n_matrix = self.n_matrix
@@ -283,11 +284,24 @@ class TestNormalizedMatrix(object):
         n_matrix = np.multiply(self.n_matrix.T, self.n_matrix)
         assert_almost_equal(n_matrix, self.m.T * self.m)
 
+        s = np.matrix([[1.0, 2.0], [4.0, 3.0], [5.0, 6.0], [8.0, 7.0], [9.0, 1.0]])
+        k = [np.array([0, 1, 1, 0, 1]), np.array([0, 1, 1, 1, 0])]
+        r = [np.matrix([[1.1, 2.2], [3.3, 4.4]]), np.matrix([[0.1, 0.2], [0.3, 0.4]])]
+        n_matrix = nm.NormalizedMatrix(s, r, k)
+        m = np.hstack([s, r[0][k[0]], r[1][k[1]]])
+
+        assert_almost_equal(n_matrix.T * n_matrix, m.T * m)
+
+        n_matrix = nm.NormalizedMatrix(s, [sp.coo_matrix(ri) for ri in r], k)
+        assert_almost_equal((n_matrix.T * n_matrix).toarray(), m.T * m)
+
     def test_cross_prod_trans(self):
         n_matrix = self.n_matrix.T
         n_matrix = n_matrix.T * n_matrix
-        print n_matrix
-        print self.m * self.m.T
+        assert_almost_equal(n_matrix, self.m * self.m.T)
+
+        n_matrix = nm.NormalizedMatrix(self.s, [sp.coo_matrix(att) for att in self.r], self.k).T
+        n_matrix = n_matrix.T * n_matrix
         assert_almost_equal(n_matrix, self.m * self.m.T)
 
     def test_max(self):
