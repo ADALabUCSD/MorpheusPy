@@ -42,7 +42,8 @@ class TestNormalizedMatrix(object):
 
         local_matrix = n_matrix + np.matrix([1.0, 2.0, 1.1, 2.2])
         assert_equal(local_matrix.ent_table, self.s + np.matrix([1.0, 2.0]))
-        assert_equal(local_matrix.att_table[0], self.r[0] + np.matrix([1.1, 2.2]))
+        assert_equal(local_matrix.att_table[0],
+                     self.r[0] + np.matrix([1.1, 2.2]))
         assert_equal(local_matrix.kfkds[0], self.k[0])
 
         local_matrix = 1 + n_matrix
@@ -52,7 +53,8 @@ class TestNormalizedMatrix(object):
 
         local_matrix = np.matrix([1.0, 2.0, 1.1, 2.2]) + n_matrix
         assert_equal(local_matrix.ent_table, np.matrix([1.0, 2.0]) + self.s)
-        assert_equal(local_matrix.att_table[0], np.matrix([1.1, 2.2]) + self.r[0])
+        assert_equal(local_matrix.att_table[0], np.matrix(
+            [1.1, 2.2]) + self.r[0])
         assert_equal(local_matrix.kfkds[0], self.k[0])
 
         local_matrix = n_matrix + 1
@@ -64,8 +66,10 @@ class TestNormalizedMatrix(object):
         local_matrix = n_matrix + np.matrix([1.0, 2.0, 1.1, 2.2])
         local_matrix += np.matrix([1.0, 2.0, 1.1, 2.2])
 
-        assert_equal(local_matrix.ent_table, self.s + np.matrix([1.0, 2.0]) * 2)
-        assert_equal(local_matrix.att_table[0], self.r[0] + np.matrix([1.1, 2.2]) * 2)
+        assert_equal(local_matrix.ent_table, self.s +
+                     np.matrix([1.0, 2.0]) * 2)
+        assert_equal(local_matrix.att_table[0],
+                     self.r[0] + np.matrix([1.1, 2.2]) * 2)
         assert_equal(local_matrix.kfkds[0], self.k[0])
 
         local_matrix = np.add(n_matrix, 1)
@@ -88,7 +92,8 @@ class TestNormalizedMatrix(object):
 
         local_matrix = n_matrix - np.matrix([1.0, 2.0, 1.1, 2.2])
         assert_equal(local_matrix.ent_table, self.s - np.matrix([1.0, 2.0]))
-        assert_equal(local_matrix.att_table[0], self.r[0] - np.matrix([1.1, 2.2]))
+        assert_equal(local_matrix.att_table[0],
+                     self.r[0] - np.matrix([1.1, 2.2]))
         assert_equal(local_matrix.kfkds[0], self.k[0])
 
         local_matrix = 1 - n_matrix
@@ -98,7 +103,8 @@ class TestNormalizedMatrix(object):
 
         local_matrix = np.matrix([1.0, 2.0, 1.1, 2.2]) - n_matrix
         assert_equal(local_matrix.ent_table, np.matrix([1.0, 2.0]) - self.s)
-        assert_equal(local_matrix.att_table[0], np.matrix([1.1, 2.2]) - self.r[0])
+        assert_equal(local_matrix.att_table[0], np.matrix(
+            [1.1, 2.2]) - self.r[0])
         assert_equal(local_matrix.kfkds[0], self.k[0])
 
         local_matrix = n_matrix - 1
@@ -111,8 +117,10 @@ class TestNormalizedMatrix(object):
         local_matrix = n_matrix - np.matrix([1.0, 2.0, 1.1, 2.2])
         local_matrix -= np.matrix([1.0, 2.0, 1.1, 2.2])
 
-        assert_equal(local_matrix.ent_table, self.s - np.matrix([1.0, 2.0]) * 2)
-        assert_equal(local_matrix.att_table[0], self.r[0] - np.matrix([1.1, 2.2]) * 2)
+        assert_equal(local_matrix.ent_table, self.s -
+                     np.matrix([1.0, 2.0]) * 2)
+        assert_equal(local_matrix.att_table[0],
+                     self.r[0] - np.matrix([1.1, 2.2]) * 2)
         assert_equal(local_matrix.kfkds[0], self.k[0])
 
         local_matrix = np.subtract(n_matrix, 1)
@@ -164,7 +172,8 @@ class TestNormalizedMatrix(object):
 
         local_matrix = n_matrix / np.matrix([1.0, 2.0, 1.1, 2.2])
         assert_equal(local_matrix.ent_table, self.s / np.matrix([1.0, 2.0]))
-        assert_equal(local_matrix.att_table[0], self.r[0] / np.matrix([1.1, 2.2]))
+        assert_equal(local_matrix.att_table[0],
+                     self.r[0] / np.matrix([1.1, 2.2]))
         assert_equal(local_matrix.kfkds[0], self.k[0])
 
         local_matrix = 2 / n_matrix
@@ -174,7 +183,8 @@ class TestNormalizedMatrix(object):
 
         local_matrix = np.matrix([1.0, 2.0, 1.1, 2.2]) / n_matrix
         assert_equal(local_matrix.ent_table, np.matrix([1.0, 2.0]) / self.s)
-        assert_equal(local_matrix.att_table[0], np.matrix([1.1, 2.2]) / self.r[0])
+        assert_equal(local_matrix.att_table[0], np.matrix(
+            [1.1, 2.2]) / self.r[0])
         assert_equal(local_matrix.kfkds[0], self.k[0])
 
         local_matrix = n_matrix / 2
@@ -187,8 +197,10 @@ class TestNormalizedMatrix(object):
         local_matrix = n_matrix / np.matrix([1.0, 2.0, 1.1, 2.2])
         local_matrix /= np.matrix([1.0, 2.0, 1.1, 2.2])
 
-        assert_equal(local_matrix.ent_table, self.s / np.power(np.matrix([1.0, 2.0]), 2))
-        assert_equal(local_matrix.att_table[0], self.r[0] / np.power(np.matrix([1.1, 2.2]), 2))
+        assert_equal(local_matrix.ent_table, self.s /
+                     np.power(np.matrix([1.0, 2.0]), 2))
+        assert_equal(
+            local_matrix.att_table[0], self.r[0] / np.power(np.matrix([1.1, 2.2]), 2))
         assert_equal(local_matrix.kfkds[0], self.k[0])
 
         local_matrix = np.divide(n_matrix, 2)
@@ -222,7 +234,8 @@ class TestNormalizedMatrix(object):
     def test_transpose(self):
         n_matrix = self.n_matrix
         assert_equal(n_matrix.T.T.sum(axis=0), n_matrix.sum(axis=0))
-        assert_equal(np.array_equal(n_matrix.T.sum(axis=0), n_matrix.sum(axis=0)), False)
+        assert_equal(np.array_equal(n_matrix.T.sum(
+            axis=0), n_matrix.sum(axis=0)), False)
 
     def test_inverse(self):
         n_matrix = self.n_matrix
@@ -284,9 +297,11 @@ class TestNormalizedMatrix(object):
         n_matrix = np.multiply(self.n_matrix.T, self.n_matrix)
         assert_almost_equal(n_matrix, self.m.T * self.m)
 
-        s = np.matrix([[1.0, 2.0], [4.0, 3.0], [5.0, 6.0], [8.0, 7.0], [9.0, 1.0]])
+        s = np.matrix([[1.0, 2.0], [4.0, 3.0], [
+                      5.0, 6.0], [8.0, 7.0], [9.0, 1.0]])
         k = [np.array([0, 1, 1, 0, 1]), np.array([0, 1, 1, 1, 0])]
-        r = [np.matrix([[1.1, 2.2], [3.3, 4.4]]), np.matrix([[0.1, 0.2], [0.3, 0.4]])]
+        r = [np.matrix([[1.1, 2.2], [3.3, 4.4]]),
+             np.matrix([[0.1, 0.2], [0.3, 0.4]])]
         n_matrix = nm.NormalizedMatrix(s, r, k)
         m = np.hstack([s, r[0][k[0]], r[1][k[1]]])
 
@@ -300,9 +315,24 @@ class TestNormalizedMatrix(object):
         n_matrix = n_matrix.T * n_matrix
         assert_almost_equal(n_matrix, self.m * self.m.T)
 
-        n_matrix = nm.NormalizedMatrix(self.s, [sp.coo_matrix(att) for att in self.r], self.k).T
+        n_matrix = nm.NormalizedMatrix(
+            self.s, [sp.coo_matrix(att) for att in self.r], self.k).T
         n_matrix = n_matrix.T * n_matrix
         assert_almost_equal(n_matrix, self.m * self.m.T)
+
+    def test_cross_prod_hess(self):
+        n_matrix = self.n_matrix
+        assert_almost_equal(n_matrix.T_cross_prod_hess(
+            np.arange(5)), self.m.T.dot(np.arange(5).reshape(-1, 1) * self.m))
+        assert_almost_equal(n_matrix._cross_prod_hess(
+            np.arange(4)), self.m.dot(np.arange(4).reshape(-1, 1) * self.m.T))
+
+        n_matrix = nm.NormalizedMatrix(
+            self.s, [sp.coo_matrix(att) for att in self.r], self.k)
+        assert_almost_equal(n_matrix.T_cross_prod_hess(
+            np.arange(5)), self.m.T.dot(np.arange(5).reshape(-1, 1) * self.m))
+        assert_almost_equal(n_matrix._cross_prod_hess(
+            np.arange(4)), self.m.dot(np.arange(4).reshape(-1, 1) * self.m.T))
 
     def test_max(self):
         n_matrix = self.n_matrix
@@ -363,7 +393,8 @@ class TestNormalizedMatrix(object):
                      (self.m - self.m.mean()) / (self.m.max() - self.m.min()))
 
     def test_imputation(self):
-        s = np.matrix([[1.0, np.nan], [4.0, 3.0], [5.0, 6.0], [8.0, 7.0], [9.0, 1.0]])
+        s = np.matrix([[1.0, np.nan], [4.0, 3.0], [
+                      5.0, 6.0], [8.0, 7.0], [9.0, 1.0]])
         k = self.k
         r = [np.matrix([[np.nan, 2.2], [3.3, 4.4]])]
         m = np.hstack([s, r[0][k[0]]])
@@ -372,16 +403,20 @@ class TestNormalizedMatrix(object):
 
         assert_equal(utils.imputation(n_matrix).sum(axis=0), m.sum(axis=0))
 
-        s = np.matrix([[1.0, np.nan], [4.0, 3.0], [5.0, 6.0], [8.0, 7.0], [9.0, 1.0]])
+        s = np.matrix([[1.0, np.nan], [4.0, 3.0], [
+                      5.0, 6.0], [8.0, 7.0], [9.0, 1.0]])
         k = [np.array([0, 1, 1, 0, 1]), np.array([0, 1, 1, 0, 1])]
-        r = [np.matrix([[np.nan, 2.2], [3.3, 4.4]]), np.matrix([[np.nan, 2.2], [3.3, 4.4]])]
+        r = [np.matrix([[np.nan, 2.2], [3.3, 4.4]]),
+             np.matrix([[np.nan, 2.2], [3.3, 4.4]])]
         m = np.hstack([s, r[0][k[0]], r[1][k[1]]])
 
         mean = np.nanmean(m, axis=0)
         inds = np.where(np.isnan(m))
         m[inds] = np.take(mean, inds[1])
         n_matrix = nm.NormalizedMatrix(s, r, k)
-        assert_almost_equal(utils.imputation(n_matrix, axis=0).sum(axis=0), m.sum(axis=0))
+        assert_almost_equal(utils.imputation(
+            n_matrix, axis=0).sum(axis=0), m.sum(axis=0))
+
 
 if __name__ == "__main__":
     run_module_suite()
