@@ -575,11 +575,7 @@ class NormalizedMatrix(matrix):
 
     def dot(self, other):
         return self.__mul__(other)
-    
-    """
-    Change
-    """
-    
+   
     def _t_cross_w(self, matrix_a, w, matrix_b=None):
         if sp.issparse(matrix_a) or sp.issparse(matrix_b):
             if matrix_b is None:
@@ -597,15 +593,44 @@ class NormalizedMatrix(matrix):
         comp.multiply_sparse(len(matrix.data), matrix.row, matrix.data, w.astype(float), res)
         return sp.coo_matrix((res, (matrix.row, matrix.col)))
 
-    def _cross_prod_w(self, w):
-        # Calculate X * A * X.T. A is a diagnalized matrix, and w is the array of diagnal of A.
+    def _cross_prod_hess(self, w):
+        
+        """Calculate X * A * X.T. A is a diagnalized matrix, and w is the array of diagnal of A.
+
+        Parameters
+        ----------
+        w : ndarray, shape (num_samples,)
+            array of diagnal of A
+
+        Returns
+        -------
+        res : X * A * X.T
+
+        Examples
+        --------
+        T = Entity Table:
+                [[ 1.  2.]
+                 [ 4.  3.]
+                 [ 5.  6.]
+                 [ 8.  7.]
+                 [ 9.  1.]]
+            Attribute Table:
+                [[ 1.1  2.2]
+                 [ 3.3  4.4]]
+            K:
+                [[0, 1, 1, 0, 1]]
+        >>> T._cross_prod_hess(np.arange(5))
+            [[ 582.,  276.,  174.,  248.],
+             [ 276.,  232.,   78.,  118.],
+             [ 174.,   78.,   66.,   90.],
+             [ 248.,  118.,   90.,  124.]]
+            
+        """
         
         w = w.astype(float)
-
         s = self.ent_table
         r = self.att_table
         k = self.kfkds
-        
         ns = k[0].shape[0]
         ds = s.shape[1]
         nr = [t.shape[0] for t in r]
@@ -613,11 +638,9 @@ class NormalizedMatrix(matrix):
 
         if not self.trans:
             if s.size > 0:
-
                 res = self._t_cross_w(s, w[0:ds])
             else:
                 res = np.zeros((ns, ns), dtype=float, order='C')
-
             count = ds
             cross_r = []
             for t in r:
@@ -625,11 +648,7 @@ class NormalizedMatrix(matrix):
                     cross_r.append(self._t_cross_w(t, w[count:count+t.shape[1]]).toarray())
                 else:
                     cross_r.append(self._t_cross_w(t, w[count:count+t.shape[1]]))
-
-
                 count += t.shape[1]
-                
-
             comp.expand_add(ns, len(k), k, cross_r, nr, res)
         else:
 
@@ -642,7 +661,6 @@ class NormalizedMatrix(matrix):
                 size = r[0].size
                 data = np.empty(size)
 
-                # part 2 and 3 are p.T and p
                 comp.multiply_sparse(size, r[0].row, r[0].data, np.sqrt(v[0]), data)
                 diag_part = self._cross(sp.coo_matrix((data, (r[0].row, r[0].col))))
                 if ds > 0:
@@ -663,7 +681,6 @@ class NormalizedMatrix(matrix):
                         comp.group_left(ns, ds, s2, k[i], m)
                         ps += [self._cross(r[i], m)]
 
-                    # cp (KRi)
                     size = r[i].size
                     data = np.empty(size)
                     comp.multiply_sparse(size, r[i].row, r[i].data, np.sqrt(v[i]), data)
@@ -686,16 +703,12 @@ class NormalizedMatrix(matrix):
                 comp.multiply(r[0].shape[0], r[0].shape[1], r[0], v[0], data)
                 res[ds:ds+dr[0], ds:ds+dr[0]] = self._cross(data)
 
-
-
                 if ds > 0:
                     m = np.zeros((nr[0], ds))
                     comp.group_left(ns, ds, s2, k[0], m)
                     res[ds:ds+dr[0], :ds] = self._cross(r[0], m)
                     res[:ds, ds:ds+dr[0]] = res[ds:ds+dr[0], :ds].T
                     res[:ds, :ds] = self._cross(s, s2)
-
-
 
                 # multi-table join
                 for i in range(1, len(k)):
@@ -708,12 +721,9 @@ class NormalizedMatrix(matrix):
                         res[ni1:ni2, :ds] = self._cross(r[i], m)
                         res[:ds, ni1:ni2] = res[ni1:ni2, :ds].T
 
-                    # cp(KRi)
                     data = np.empty(r[i].shape, order='C')
                     comp.multiply(r[i].shape[0], r[i].shape[1], r[i], v[i], data)
                     res[ni1:ni2, ni1:ni2] = self._cross(data)
-
-
 
                     for j in range(i):
                         dj1 = ds + sum([t.shape[1] for t in r[:j]])
@@ -730,9 +740,6 @@ class NormalizedMatrix(matrix):
                             res[dj1:dj2, ni1:ni2] = res[ni1:ni2, dj1:dj2].T
 
         return res
-    
-    """
-    """
 
     def max(self, axis=None, out=None):
         """
