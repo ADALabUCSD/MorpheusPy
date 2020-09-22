@@ -322,17 +322,23 @@ class TestNormalizedMatrix(object):
 
     def test_cross_prod_hess(self):
         n_matrix = self.n_matrix
-        assert_almost_equal(n_matrix.T_cross_prod_hess(
-            np.arange(5)), self.m.T.dot(np.arange(5).reshape(-1, 1) * self.m))
         assert_almost_equal(n_matrix._cross_prod_hess(
             np.arange(4)), self.m.dot(np.arange(4).reshape(-1, 1) * self.m.T))
 
         n_matrix = nm.NormalizedMatrix(
             self.s, [sp.coo_matrix(att) for att in self.r], self.k)
-        assert_almost_equal(n_matrix.T_cross_prod_hess(
-            np.arange(5)), self.m.T.dot(np.arange(5).reshape(-1, 1) * self.m))
         assert_almost_equal(n_matrix._cross_prod_hess(
             np.arange(4)), self.m.dot(np.arange(4).reshape(-1, 1) * self.m.T))
+
+    def test_cross_prod_hess_tran(self):
+        n_matrix = self.n_matrix.T
+        assert_almost_equal(n_matrix_cross_prod_hess(
+            np.arange(5)), self.m.T.dot(np.arange(5).reshape(-1, 1) * self.m))
+
+        n_matrix = nm.NormalizedMatrix(
+            self.s, [sp.coo_matrix(att) for att in self.r], self.k).T
+        assert_almost_equal(n_matrix_cross_prod_hess(
+            np.arange(5)), self.m.T.dot(np.arange(5).reshape(-1, 1) * self.m))
 
     def test_max(self):
         n_matrix = self.n_matrix
