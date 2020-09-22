@@ -575,6 +575,164 @@ class NormalizedMatrix(matrix):
 
     def dot(self, other):
         return self.__mul__(other)
+    
+    """
+    Change
+    """
+    
+    def _t_cross_w(self, matrix_a, w, matrix_b=None):
+        if sp.issparse(matrix_a) or sp.issparse(matrix_b):
+            if matrix_b is None:
+                return matrix_a * matrix_a.T.multiply(w.reshape(-1, 1))
+            else:
+                return matrix_a * matrix_b.T.multiply(w.reshape(-1, 1))
+        else:
+            if matrix_b is None:
+                return matrix_a.dot(w.reshape(-1, 1) * np.array(matrix_a).T)
+            else:
+                return matrix_a.dot(w.reshape(-1, 1) * np.array(matrix_b).T)
+    
+    def _mul_sparse(self, matrix, w):
+        res = np.zeros(len(matrix.data))
+        comp.multiply_sparse(len(matrix.data), matrix.row, matrix.data, w.astype(float), res)
+        return sp.coo_matrix((res, (matrix.row, matrix.col)))
+
+    def _cross_prod_w(self, w):
+        # Calculate X * A * X.T. A is a diagnalized matrix, and w is the array of diagnal of A.
+        
+        w = w.astype(float)
+
+        s = self.ent_table
+        r = self.att_table
+        k = self.kfkds
+        
+        ns = k[0].shape[0]
+        ds = s.shape[1]
+        nr = [t.shape[0] for t in r]
+        dr = [t.shape[1] for t in r]
+
+        if not self.trans:
+            if s.size > 0:
+
+                res = self._t_cross_w(s, w[0:ds])
+            else:
+                res = np.zeros((ns, ns), dtype=float, order='C')
+
+            count = ds
+            cross_r = []
+            for t in r:
+                if all(map(sp.issparse, r)):
+                    cross_r.append(self._t_cross_w(t, w[count:count+t.shape[1]]).toarray())
+                else:
+                    cross_r.append(self._t_cross_w(t, w[count:count+t.shape[1]]))
+
+
+                count += t.shape[1]
+                
+
+            comp.expand_add(ns, len(k), k, cross_r, nr, res)
+        else:
+
+            if all(map(sp.issparse, r)):
+                # change the 'other' as weight to group
+                other = w.reshape((1, -1)).astype(float)
+                s2 = w.reshape(-1, 1) * np.array(s)
+                v = [np.zeros((1, t.shape[0]), dtype=float) for t in r]
+                comp.group(ns, len(k), 1, k, nr, other, v)
+                size = r[0].size
+                data = np.empty(size)
+
+                # part 2 and 3 are p.T and p
+                comp.multiply_sparse(size, r[0].row, r[0].data, np.sqrt(v[0]), data)
+                diag_part = self._cross(sp.coo_matrix((data, (r[0].row, r[0].col))))
+                if ds > 0:
+                    m = np.zeros((nr[0], ds))
+                    comp.group_left(ns, ds, s2, k[0], m)
+                    p = self._cross(r[0], m)
+                    s_part = self._cross(s, s2)
+
+                    res = sp.vstack((np.hstack((s_part, p.T)), sp.hstack((p, diag_part))))
+                else:
+                    res = diag_part
+
+                # multi-table join
+                for i in range(1, len(k)):
+                    ps = []
+                    if ds > 0:
+                        m = np.zeros((nr[i], ds))
+                        comp.group_left(ns, ds, s2, k[i], m)
+                        ps += [self._cross(r[i], m)]
+
+                    # cp (KRi)
+                    size = r[i].size
+                    data = np.empty(size)
+                    comp.multiply_sparse(size, r[i].row, r[i].data, np.sqrt(v[i]), data)
+                    diag_part = self._cross(sp.coo_matrix((data, (r[i].row, r[i].col))))
+
+                    for j in range(i):
+                        ps += [r[i].tocsr()[k[i]].T.dot(r[j].tocsr()[k[j]].multiply(w.reshape(-1, 1)))]
+
+                    res = sp.vstack((sp.hstack((res, sp.vstack([p.T for p in ps]))), sp.hstack(ps + [diag_part])))
+
+            else:
+                nt = s.shape[1] + sum([att.shape[1] for att in r])
+                other = w.reshape((1, -1)).astype(float)
+                s2 = w.reshape(-1, 1) * np.array(s)
+                v = [np.zeros((1, t.shape[0]), dtype=float) for t in r]
+                res = np.empty((nt, nt))
+
+                data = np.empty(r[0].shape, order='C')
+                comp.group(ns, len(k), 1, k, nr, other, v)
+                comp.multiply(r[0].shape[0], r[0].shape[1], r[0], v[0], data)
+                res[ds:ds+dr[0], ds:ds+dr[0]] = self._cross(data)
+
+
+
+                if ds > 0:
+                    m = np.zeros((nr[0], ds))
+                    comp.group_left(ns, ds, s2, k[0], m)
+                    res[ds:ds+dr[0], :ds] = self._cross(r[0], m)
+                    res[:ds, ds:ds+dr[0]] = res[ds:ds+dr[0], :ds].T
+                    res[:ds, :ds] = self._cross(s, s2)
+
+
+
+                # multi-table join
+                for i in range(1, len(k)):
+
+                    if ds > 0:
+                        m = np.zeros((nr[i], ds))
+                        comp.group_left(ns, ds, s2, k[i], m)
+                        ni1 = ds + sum([t.shape[1] for t in r[:i]])
+                        ni2 = ni1 + r[i].shape[1]
+                        res[ni1:ni2, :ds] = self._cross(r[i], m)
+                        res[:ds, ni1:ni2] = res[ni1:ni2, :ds].T
+
+                    # cp(KRi)
+                    data = np.empty(r[i].shape, order='C')
+                    comp.multiply(r[i].shape[0], r[i].shape[1], r[i], v[i], data)
+                    res[ni1:ni2, ni1:ni2] = self._cross(data)
+
+
+
+                    for j in range(i):
+                        dj1 = ds + sum([t.shape[1] for t in r[:j]])
+                        dj2 = dj1 +r[j].shape[1]
+                        if (ns * 1.0 / nr[j]) > (1 + nr[j] * 1.0 / dr[j]):
+                            m = np.zeros((nr[i], nr[j]), order='C')
+                            # Update in comp.cpp. When count the number in each group, add w instead of 1.
+                            comp.group_k_by_k_w(nr[i], nr[j], ns, w, k[i], k[j], m)
+
+                            res[ni1:ni2, dj1:dj2] = r[i].T.dot(m.T.dot(r[j]))
+                            res[dj1:dj2, ni1:ni2] = res[ni1:ni2, dj1:dj2].T
+                        else:
+                            res[ni1:ni2, dj1:dj2] = (w.reshape(-1, 1) * np.array(r[i][k[i]])).T.dot(r[j][k[j]])
+                            res[dj1:dj2, ni1:ni2] = res[ni1:ni2, dj1:dj2].T
+
+        return res
+    
+    """
+    """
 
     def max(self, axis=None, out=None):
         """
