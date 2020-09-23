@@ -17,6 +17,7 @@ import numpy.core.numeric as N
 import time
 import comp
 
+
 class NormalizedMatrix(matrix):
     __array_priority__ = 12.0
 
@@ -24,7 +25,7 @@ class NormalizedMatrix(matrix):
                 dtype=None, copy=True, trans=False, stamp=None):
         """
         Matrix constructor
-        
+
         Parameters
         ---------
         ent_table: numpy matrix
@@ -60,7 +61,8 @@ class NormalizedMatrix(matrix):
         # obj = N.ndarray.__new__(NormalizedMatrix,
         #                         (sum(sizes), len(kfkds[0])) if trans else (len(kfkds[0]), sum(sizes)), dtype)
         obj = N.ndarray.__new__(NormalizedMatrix, dtype)
-        obj.nshape = (sum(sizes), len(kfkds[0])) if trans else (len(kfkds[0]), sum(sizes))
+        obj.nshape = (sum(sizes), len(kfkds[0])) if trans else (
+            len(kfkds[0]), sum(sizes))
         obj.ent_table = ent_table
         obj.att_table = att_table
         obj.kfkds = kfkds
@@ -69,7 +71,8 @@ class NormalizedMatrix(matrix):
         obj.stamp = time.clock() if stamp is None else stamp
         obj.sizes = sizes
         # used for future operators
-        obj.indexes = reduce(lambda x, y: x + [(x[-1][1], x[-1][1] + y)], sizes, [(0, 0)])[2:]
+        obj.indexes = reduce(
+            lambda x, y: x + [(x[-1][1], x[-1][1] + y)], sizes, [(0, 0)])[2:]
         return obj
 
     def _copy(self, ent_table, att_table):
@@ -94,9 +97,11 @@ class NormalizedMatrix(matrix):
 
     def __str__(self):
         return "\n".join(["Entity Table:", self.ent_table.__str__(),
-              "Attribute Table:", "\n".join((t.__str__() for t in self.att_table)),
-              "K matrix:", "\n".join((t.__str__() for t in self.kfkds)),
-              "Transposed:", self.trans.__str__()])
+                          "Attribute Table:", "\n".join(
+                              (t.__str__() for t in self.att_table)),
+                          "K matrix:", "\n".join(
+                              (t.__str__() for t in self.kfkds)),
+                          "Transposed:", self.trans.__str__()])
 
     """
     Array functions are created to follow numpy semantics.
@@ -106,6 +111,7 @@ class NormalizedMatrix(matrix):
     2. View casting
     3. Creating from new template
     """
+
     def __array_prepare__(self, obj, context=None):
         pass
 
@@ -133,7 +139,8 @@ class NormalizedMatrix(matrix):
         :return: Normalized matrix or matrix or ndarray or numeric
         """
         if ufunc in self._SUPPORTED_UFUNCS and len(inputs) == 2 and method == "__call__":
-            order = isinstance(inputs[0], NormalizedMatrix) - isinstance(inputs[1], NormalizedMatrix)
+            order = isinstance(inputs[0], NormalizedMatrix) - \
+                isinstance(inputs[1], NormalizedMatrix)
             if order == 1:
                 return getattr(inputs[0], self._SUPPORTED_UFUNCS[ufunc][order])(inputs[1], **kwargs)
             if order == -1:
@@ -169,9 +176,10 @@ class NormalizedMatrix(matrix):
         if isinstance(other, (N.ndarray, list, tuple)):
             other = asmatrix(other)
             if other.shape[1] == self.shape[1] and other.shape[0] == 1:
-                self.ent_table = self.ent_table + other[:, :self.ent_table.shape[1]]
+                self.ent_table = self.ent_table + \
+                    other[:, :self.ent_table.shape[1]]
                 self.att_table = [t + other[:, self.indexes[i][0]:self.indexes[i][1]]
-                                   for i, t in enumerate(self.att_table)]
+                                  for i, t in enumerate(self.att_table)]
                 return self
 
         return NotImplemented
@@ -192,7 +200,7 @@ class NormalizedMatrix(matrix):
     def __rsub__(self, other):
         if isscalar(other):
             return self._copy(other - self.ent_table,
-                          [other - t for t in self.att_table])
+                              [other - t for t in self.att_table])
 
         if isinstance(other, (N.ndarray, list, tuple)):
             other = asmatrix(other)
@@ -212,9 +220,10 @@ class NormalizedMatrix(matrix):
         if isinstance(other, (N.ndarray, list, tuple)):
             other = asmatrix(other)
             if other.shape[1] == self.shape[1] and other.shape[0] == 1:
-                self.ent_table = self.ent_table - other[:, :self.ent_table.shape[1]]
+                self.ent_table = self.ent_table - \
+                    other[:, :self.ent_table.shape[1]]
                 self.att_table = [t - other[:, self.indexes[i][0]:self.indexes[i][1]]
-                                   for i, t in enumerate(self.att_table)]
+                                  for i, t in enumerate(self.att_table)]
                 return self
 
         return NotImplemented
@@ -294,9 +303,10 @@ class NormalizedMatrix(matrix):
         if isinstance(other, (N.ndarray, list, tuple)):
             other = asmatrix(other)
             if other.shape[1] == self.shape[1] and other.shape[0] == 1:
-                self.ent_table = self.ent_table / other[:, :self.ent_table.shape[1]]
+                self.ent_table = self.ent_table / \
+                    other[:, :self.ent_table.shape[1]]
                 self.att_table = [t / other[:, self.indexes[i][0]:self.indexes[i][1]]
-                                   for i, t in enumerate(self.att_table)]
+                                  for i, t in enumerate(self.att_table)]
                 return self
 
         return NotImplemented
@@ -306,21 +316,24 @@ class NormalizedMatrix(matrix):
             return NotImplemented
 
         return self._copy(
-            (self.ent_table.power(other) if sp.issparse(self.ent_table) else np.power(self.ent_table, other)),
+            (self.ent_table.power(other) if sp.issparse(
+                self.ent_table) else np.power(self.ent_table, other)),
             [(t.power(other) if sp.issparse(t) else np.power(t, other)) for t in self.att_table])
 
     def __rpow__(self, other):
         if not isscalar(other):
             return NotImplemented
 
-        return self._copy(np.power(other, self.ent_table.toarray() if sp.issparse(self.ent_table) else self.ent_table ),
+        return self._copy(np.power(other, self.ent_table.toarray() if sp.issparse(self.ent_table) else self.ent_table),
                           [np.power(other, t.toarray() if sp.issparse(t) else t) for t in self.att_table])
 
     def __ipow__(self, other):
         if not isscalar(other):
             return NotImplemented
-        self.ent_table = self.ent_table.power(2) if sp.issparse(self.ent_table) else np.power(self.ent_table, other)
-        self.att_table = [(t.power(other) if sp.issparse(t) else np.power(t, other)) for t in self.att_table]
+        self.ent_table = self.ent_table.power(2) if sp.issparse(
+            self.ent_table) else np.power(self.ent_table, other)
+        self.att_table = [(t.power(other) if sp.issparse(
+            t) else np.power(t, other)) for t in self.att_table]
         return self
 
     # Aggregation
@@ -366,7 +379,8 @@ class NormalizedMatrix(matrix):
             else:
                 other = np.ones((1, ns))
 
-                res = [np.zeros((1, t.shape[0]), dtype=float) for t in self.att_table]
+                res = [np.zeros((1, t.shape[0]), dtype=float)
+                       for t in self.att_table]
                 comp.group(ns, len(k), 1, k, nr, other, res)
 
                 return np.hstack(
@@ -377,7 +391,8 @@ class NormalizedMatrix(matrix):
             if self.trans:
                 other = np.ones((1, ns))
 
-                res = [np.zeros((1, t.shape[0]), dtype=float) for t in self.att_table]
+                res = [np.zeros((1, t.shape[0]), dtype=float)
+                       for t in self.att_table]
                 comp.group(ns, len(k), 1, k, nr, other, res)
 
                 return np.hstack(
@@ -385,7 +400,8 @@ class NormalizedMatrix(matrix):
                     [res * t for i, t in enumerate(self.att_table)]).T
             else:
                 return self.ent_table.sum(axis=1) + \
-                       sum((t.sum(axis=1)[self.kfkds[i]] for i, t in enumerate(self.att_table)))
+                    sum((t.sum(axis=1)[self.kfkds[i]]
+                         for i, t in enumerate(self.att_table)))
 
         # sum of the whole matrix
         # res is k * r
@@ -393,7 +409,8 @@ class NormalizedMatrix(matrix):
         res = [np.zeros((1, t.shape[0]), dtype=float) for t in self.att_table]
         comp.group(ns, len(k), 1, k, nr, other, res)
         return self.ent_table.sum() + \
-               sum((res[i] * t.sum(axis=1) for i, t in enumerate(self.att_table)))._collapse(None)
+            sum((res[i] * t.sum(axis=1)
+                 for i, t in enumerate(self.att_table)))._collapse(None)
 
     # Multiplication
     def _left_matrix_multiplication(self, n_matrix, other):
@@ -421,7 +438,8 @@ class NormalizedMatrix(matrix):
 
             v_list.append(np.asfortranarray(v))
 
-        comp.add_new(ns, len(k), dw, k, v_list, [v.shape[0] for v in v_list], res)
+        comp.add_new(ns, len(k), dw, k, v_list, [
+                     v.shape[0] for v in v_list], res)
 
         return res
 
@@ -465,21 +483,25 @@ class NormalizedMatrix(matrix):
         else:
             if all(map(sp.issparse, self.att_table)):
                 other = np.ones((1, ns))
-                v = [np.zeros((1, t.shape[0]), dtype=float) for t in self.att_table]
+                v = [np.zeros((1, t.shape[0]), dtype=float)
+                     for t in self.att_table]
                 comp.group(ns, len(k), 1, k, nr, other, v)
                 size = self.att_table[0].size
                 data = np.empty(size)
 
                 # part 2 and 3 are p.T and p
-                comp.multiply_sparse(size, self.att_table[0].row, self.att_table[0].data, np.sqrt(v[0]), data)
-                diag_part = self._cross(sp.coo_matrix((data, (self.att_table[0].row, self.att_table[0].col))))
+                comp.multiply_sparse(
+                    size, self.att_table[0].row, self.att_table[0].data, np.sqrt(v[0]), data)
+                diag_part = self._cross(sp.coo_matrix(
+                    (data, (self.att_table[0].row, self.att_table[0].col))))
                 if ds > 0:
                     m = np.zeros((nr[0], ds))
                     comp.group_left(ns, ds, s, k[0], m)
                     p = self._cross(self.att_table[0], m)
                     s_part = self._cross(self.ent_table)
 
-                    res = sp.vstack((np.hstack((s_part, p.T)), sp.hstack((p, diag_part))))
+                    res = sp.vstack((np.hstack((s_part, p.T)),
+                                     sp.hstack((p, diag_part))))
                 else:
                     res = diag_part
 
@@ -494,22 +516,28 @@ class NormalizedMatrix(matrix):
                     # cp (KRi)
                     size = self.att_table[i].size
                     data = np.empty(size)
-                    comp.multiply_sparse(size, self.att_table[i].row, self.att_table[i].data, np.sqrt(v[i]), data)
-                    diag_part = self._cross(sp.coo_matrix((data, (self.att_table[i].row, self.att_table[i].col))))
+                    comp.multiply_sparse(
+                        size, self.att_table[i].row, self.att_table[i].data, np.sqrt(v[i]), data)
+                    diag_part = self._cross(sp.coo_matrix(
+                        (data, (self.att_table[i].row, self.att_table[i].col))))
 
                     for j in range(i):
                         ps += [r[i].tocsr()[k[i]].T.dot(r[j].tocsr()[k[j]])]
 
-                    res = sp.vstack((sp.hstack((res, sp.vstack([p.T for p in ps]))), sp.hstack(ps + [diag_part])))
+                    res = sp.vstack(
+                        (sp.hstack((res, sp.vstack([p.T for p in ps]))), sp.hstack(ps + [diag_part])))
             else:
-                nt = self.ent_table.shape[1] + sum([att.shape[1] for att in self.att_table])
+                nt = self.ent_table.shape[1] + \
+                    sum([att.shape[1] for att in self.att_table])
                 other = np.ones((1, ns))
-                v = [np.zeros((1, t.shape[0]), dtype=float) for t in self.att_table]
+                v = [np.zeros((1, t.shape[0]), dtype=float)
+                     for t in self.att_table]
                 res = np.empty((nt, nt))
 
                 data = np.empty(self.att_table[0].shape, order='C')
                 comp.group(ns, len(k), 1, k, nr, other, v)
-                comp.multiply(self.att_table[0].shape[0], self.att_table[0].shape[1], self.att_table[0], v[0], data)
+                comp.multiply(
+                    self.att_table[0].shape[0], self.att_table[0].shape[1], self.att_table[0], v[0], data)
                 res[ds:ds+dr[0], ds:ds+dr[0]] = self._cross(data)
 
                 if ds > 0:
@@ -524,19 +552,22 @@ class NormalizedMatrix(matrix):
                     if ds > 0:
                         m = np.zeros((nr[i], ds))
                         comp.group_left(ns, ds, s, k[i], m)
-                        ni1 = ds + sum([t.shape[1] for t in self.att_table[:i]])
+                        ni1 = ds + sum([t.shape[1]
+                                        for t in self.att_table[:i]])
                         ni2 = ni1 + self.att_table[i].shape[1]
                         res[ni1:ni2, :ds] = self._cross(self.att_table[i], m)
                         res[:ds, ni1:ni2] = res[ni1:ni2, :ds].T
 
                     # cp(KRi)
                     data = np.empty(self.att_table[i].shape, order='C')
-                    comp.multiply(self.att_table[i].shape[0], self.att_table[i].shape[1], self.att_table[i], v[i], data)
+                    comp.multiply(
+                        self.att_table[i].shape[0], self.att_table[i].shape[1], self.att_table[i], v[i], data)
                     res[ni1:ni2, ni1:ni2] = self._cross(data)
 
                     for j in range(i):
-                        dj1 = ds + sum([t.shape[1] for t in self.att_table[:j]])
-                        dj2 = dj1 +self.att_table[j].shape[1]
+                        dj1 = ds + sum([t.shape[1]
+                                        for t in self.att_table[:j]])
+                        dj2 = dj1 + self.att_table[j].shape[1]
 
                         if (ns * 1.0 / nr[j]) > (1 + nr[j] * 1.0 / dr[j]):
                             m = np.zeros((nr[i], nr[j]), order='C')
@@ -545,7 +576,8 @@ class NormalizedMatrix(matrix):
                             res[ni1:ni2, dj1:dj2] = r[i].T.dot(m.T.dot(r[j]))
                             res[dj1:dj2, ni1:ni2] = res[ni1:ni2, dj1:dj2].T
                         else:
-                            res[ni1:ni2, dj1:dj2] = r[i][k[i]].T.dot(r[j][k[j]])
+                            res[ni1:ni2, dj1:dj2] = r[i][k[i]].T.dot(
+                                r[j][k[j]])
                             res[dj1:dj2, ni1:ni2] = res[ni1:ni2, dj1:dj2].T
             return res
 
@@ -576,6 +608,192 @@ class NormalizedMatrix(matrix):
     def dot(self, other):
         return self.__mul__(other)
 
+    def _t_cross_w(self, matrix_a, w, matrix_b=None):
+        """Calculate Matrix_a * A * Matrix_b. A is a diagnalized matrix, and w is the array of diagnal of A.
+
+        Parameters
+        ----------
+        w : ndarray, shape (n, )
+            array of diagnal of A
+
+        matrix_a : numpy or sparse matrix, shape (m, n)
+
+        matrix_b : numpy or sparse matrix, shape (n, p)
+
+        Returns
+        -------
+        res : Matrix_a * A * Matrix_b. A
+        """
+        if sp.issparse(matrix_a) or sp.issparse(matrix_b):
+            if matrix_b is None:
+                return matrix_a * matrix_a.T.multiply(w.reshape(-1, 1))
+            else:
+                return matrix_a * matrix_b.T.multiply(w.reshape(-1, 1))
+        else:
+            if matrix_b is None:
+                return matrix_a.dot(w.reshape(-1, 1) * np.array(matrix_a).T)
+            else:
+                return matrix_a.dot(w.reshape(-1, 1) * np.array(matrix_b).T)
+
+    def _cross_prod_hess(self, w):
+        """Calculate X * A * X.T. A is a diagnalized matrix, and w is the array of diagnal of A.
+
+        Parameters
+        ----------
+        w : ndarray, shape (num_samples,)
+            array of diagnal of A
+
+        Returns
+        -------
+        res : X * A * X.T
+
+        Examples
+        --------
+        T = Entity Table:
+                [[ 1.  2.]
+                 [ 4.  3.]
+                 [ 5.  6.]
+                 [ 8.  7.]
+                 [ 9.  1.]]
+            Attribute Table:
+                [[ 1.1  2.2]
+                 [ 3.3  4.4]]
+            K:
+                [[0, 1, 1, 0, 1]]
+        >>> T._cross_prod_hess(np.arange(5))
+            [[ 582.,  276.,  174.,  248.],
+             [ 276.,  232.,   78.,  118.],
+             [ 174.,   78.,   66.,   90.],
+             [ 248.,  118.,   90.,  124.]]
+
+        """
+
+        w = w.astype(float)
+        s = self.ent_table
+        r = self.att_table
+        k = self.kfkds
+        ns = k[0].shape[0]
+        ds = s.shape[1]
+        nr = [t.shape[0] for t in r]
+        dr = [t.shape[1] for t in r]
+
+        if not self.trans:
+            if s.size > 0:
+                res = self._t_cross_w(s, w[0:ds])
+            else:
+                res = np.zeros((ns, ns), dtype=float, order='C')
+            count = ds
+            cross_r = []
+            for t in r:
+                if all(map(sp.issparse, r)):
+                    cross_r.append(self._t_cross_w(
+                        t, w[count:count+t.shape[1]]).toarray())
+                else:
+                    cross_r.append(self._t_cross_w(
+                        t, w[count:count+t.shape[1]]))
+                count += t.shape[1]
+            comp.expand_add(ns, len(k), k, cross_r, nr, res)
+        else:
+
+            if all(map(sp.issparse, r)):
+                # change the 'other' as weight to group
+                other = w.reshape((1, -1)).astype(float)
+                s2 = w.reshape(-1, 1) * np.array(s)
+                v = [np.zeros((1, t.shape[0]), dtype=float) for t in r]
+                comp.group(ns, len(k), 1, k, nr, other, v)
+                size = r[0].size
+                data = np.empty(size)
+
+                comp.multiply_sparse(
+                    size, r[0].row, r[0].data, np.sqrt(v[0]), data)
+                diag_part = self._cross(
+                    sp.coo_matrix((data, (r[0].row, r[0].col))))
+                if ds > 0:
+                    m = np.zeros((nr[0], ds))
+                    comp.group_left(ns, ds, s2, k[0], m)
+                    p = self._cross(r[0], m)
+                    s_part = self._cross(s, s2)
+
+                    res = sp.vstack((np.hstack((s_part, p.T)),
+                                     sp.hstack((p, diag_part))))
+                else:
+                    res = diag_part
+
+                # multi-table join
+                for i in range(1, len(k)):
+                    ps = []
+                    if ds > 0:
+                        m = np.zeros((nr[i], ds))
+                        comp.group_left(ns, ds, s2, k[i], m)
+                        ps += [self._cross(r[i], m)]
+
+                    size = r[i].size
+                    data = np.empty(size)
+                    comp.multiply_sparse(
+                        size, r[i].row, r[i].data, np.sqrt(v[i]), data)
+                    diag_part = self._cross(
+                        sp.coo_matrix((data, (r[i].row, r[i].col))))
+
+                    for j in range(i):
+                        ps += [r[i].tocsr()[k[i]].T.dot(r[j].tocsr()
+                                                        [k[j]].multiply(w.reshape(-1, 1)))]
+
+                    res = sp.vstack(
+                        (sp.hstack((res, sp.vstack([p.T for p in ps]))), sp.hstack(ps + [diag_part])))
+
+            else:
+                nt = s.shape[1] + sum([att.shape[1] for att in r])
+                other = w.reshape((1, -1)).astype(float)
+                s2 = w.reshape(-1, 1) * np.array(s)
+                v = [np.zeros((1, t.shape[0]), dtype=float) for t in r]
+                res = np.empty((nt, nt))
+
+                data = np.empty(r[0].shape, order='C')
+                comp.group(ns, len(k), 1, k, nr, other, v)
+                comp.multiply(r[0].shape[0], r[0].shape[1], r[0], v[0], data)
+                res[ds:ds+dr[0], ds:ds+dr[0]] = self._cross(data)
+
+                if ds > 0:
+                    m = np.zeros((nr[0], ds))
+                    comp.group_left(ns, ds, s2, k[0], m)
+                    res[ds:ds+dr[0], :ds] = self._cross(r[0], m)
+                    res[:ds, ds:ds+dr[0]] = res[ds:ds+dr[0], :ds].T
+                    res[:ds, :ds] = self._cross(s, s2)
+
+                # multi-table join
+                for i in range(1, len(k)):
+
+                    if ds > 0:
+                        m = np.zeros((nr[i], ds))
+                        comp.group_left(ns, ds, s2, k[i], m)
+                        ni1 = ds + sum([t.shape[1] for t in r[:i]])
+                        ni2 = ni1 + r[i].shape[1]
+                        res[ni1:ni2, :ds] = self._cross(r[i], m)
+                        res[:ds, ni1:ni2] = res[ni1:ni2, :ds].T
+
+                    data = np.empty(r[i].shape, order='C')
+                    comp.multiply(r[i].shape[0], r[i].shape[1],
+                                  r[i], v[i], data)
+                    res[ni1:ni2, ni1:ni2] = self._cross(data)
+
+                    for j in range(i):
+                        dj1 = ds + sum([t.shape[1] for t in r[:j]])
+                        dj2 = dj1 + r[j].shape[1]
+                        if (ns * 1.0 / nr[j]) > (1 + nr[j] * 1.0 / dr[j]):
+                            m = np.zeros((nr[i], nr[j]), order='C')
+                            # Update in comp.cpp. When count the number in each group, add w instead of 1.
+                            comp.group_k_by_k_w(
+                                nr[i], nr[j], ns, w, k[i], k[j], m)
+
+                            res[ni1:ni2, dj1:dj2] = r[i].T.dot(m.T.dot(r[j]))
+                            res[dj1:dj2, ni1:ni2] = res[ni1:ni2, dj1:dj2].T
+                        else:
+                            res[ni1:ni2, dj1:dj2] = (
+                                w.reshape(-1, 1) * np.array(r[i][k[i]])).T.dot(r[j][k[j]])
+                            res[dj1:dj2, ni1:ni2] = res[ni1:ni2, dj1:dj2].T
+
+        return res
+
     def max(self, axis=None, out=None):
         """
         Calculate the maximum element per table or per column.
@@ -590,7 +808,7 @@ class NormalizedMatrix(matrix):
 
         if axis == 0:
             return np.hstack((self.ent_table.max(axis=0),
-                             np.hstack([t.max(axis=0) for t in self.att_table])))
+                              np.hstack([t.max(axis=0) for t in self.att_table])))
 
         return NotImplemented
 
@@ -608,7 +826,7 @@ class NormalizedMatrix(matrix):
 
         if axis == 0:
             return np.hstack((self.ent_table.min(axis=0),
-                             np.hstack([t.min(axis=0) for t in self.att_table])))
+                              np.hstack([t.min(axis=0) for t in self.att_table])))
 
         return NotImplemented
 
@@ -668,7 +886,6 @@ class NormalizedMatrix(matrix):
             return np.hstack([self.ent_table.mean(axis=0)] +
                              [self.att_table[i][self.kfkds[i]].mean(axis=0) for i in range(len(self.kfkds))])
 
-
         return NotImplemented
 
     def transpose(self):
@@ -684,6 +901,7 @@ class NormalizedMatrix(matrix):
                 return np.mat(self.T * self).I * self.T
             else:
                 return self.T * np.mat(self * self.T).I
+
     @property
     def T(self):
         return self.transpose()
